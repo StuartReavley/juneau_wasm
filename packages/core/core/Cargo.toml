@@ -1,0 +1,15 @@
+[package]
+name = "juneau_core"
+version = "0.1.0"
+edition = "2018"
+
+
+[lib]
+
+
+[dependencies]
+ansi_term = "0.12.1"
+base64 = "0.13.0"
+diff = "0.1.12"
+# rand = "0.8.2"
+serde = { version = "1.0", features = ["derive"] }

@@ -1,0 +1,72 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Rust: cargo build",
+			"type": "shell",
+			"command": "cargo",
+			"args": [
+				"+nightly",
+				"build",
+				"--package=juneau"
+			],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"presentation": {
+				"clear": true
+			},
+			"options": {
+				"env": {
+					"RUSTFLAGS": "-C link-args=-Wl,-zstack-size=4194304 --cfg=web_sys_unstable_apis"
+				}
+			}
+		},
+		{
+			"label": "test",
+			"type": "shell",
+			"command": "cargo",
+			"args": [
+				"+nightly",
+				"test",
+				"--package=juneau"
+			],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": {
+				"kind": "test",
+				"isDefault": true
+			},
+			"options": {
+				"env": {
+					"RUST_MIN_STACK": "8388608",
+					"RUSTFLAGS": "--cfg=web_sys_unstable_apis"
+				}
+			}
+		},
+		{
+			"label": "check",
+			"type": "shell",
+			"command": "cargo",
+			"args": [
+				"+nightly",
+				"check",
+				"--tests",
+				"--package=juneau"
+			],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"options": {
+				"env": {
+					"RUSTFLAGS": "--cfg=web_sys_unstable_apis"
+				}
+			}
+		}
+	]
+}
