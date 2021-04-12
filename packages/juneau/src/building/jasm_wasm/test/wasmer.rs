@@ -2,12 +2,9 @@ use wasmer::{imports, wat2wasm, Instance, Module, Store, Value};
 use wasmer_compiler_cranelift::Cranelift;
 use wasmer_engine_jit::JIT;
 
-
-
 /// This test is lifted straight from the wasmer docs (https://crates.io/crates/wasmer/), to show that wasmer works correctly
 #[test]
 fn testing_wasmer() {
-
     // Let's declare the Wasm module with the text representation.
     let wasm_bytes = wat2wasm(
         r#"
@@ -20,7 +17,8 @@ fn testing_wasmer() {
   (export "sum" (func $sum_f)))
 "#
         .as_bytes(),
-    ).unwrap();
+    )
+    .unwrap();
 
     // Define a compiler configuration.
     //
@@ -66,5 +64,4 @@ fn testing_wasmer() {
 
     println!("Results: {:?}", results);
     assert_eq!(results.to_vec(), vec![Value::I32(3)]);
-
 }
