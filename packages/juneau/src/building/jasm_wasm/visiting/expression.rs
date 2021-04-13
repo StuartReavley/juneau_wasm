@@ -1,13 +1,10 @@
-use crate::{
-    core::Id,
-    semantic::{
+use crate::{building::BuildVisitor, core::Id, semantic::{
         jasm::{
             Block, Jasm, JasmExpression, JasmExpressionVisitor, JasmStatement,
             JasmStatementVisitor, JasmType, JasmValue, Struct,
         },
         Function, FunctionType, Name, Parameter, Variable, BinaryOperator
-    },
-};
+    }};
 use crate::{
     core::{Visitor, VisitorWith},
     semantic::{jasm::JasmPrimitiveImplementation, Implementation},
@@ -44,13 +41,14 @@ impl JasmExpressionVisitor<()> for WasmBuilderVisitor {
             },
             _ => BinaryOp::I64Sub
         };
-        self.function_builder.func_body().binop(ops);
+        self.function_builder.get_mut().func_body().binop(ops);
     }
 
     fn visit_variable(&mut self, variable: &Variable<Jasm>) -> () {
-        let index = (variable.id.value - 1001) as usize;
-        let locals: Vec<&Local> = self.module.locals.iter().collect();
-        self.function_builder.func_body().local_get(locals[index].id());
+        // here, instead of subtracting 1001, we need to store the variable IDs, and then call 'get_variable'
+        let Variable {id, name, ..} = variable;
+        let local = self.get_variable(*id, name);
+        self.function_builder.get_mut().func_body().local_get(local);
     }
 
     fn visit_cast(

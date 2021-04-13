@@ -78,6 +78,6 @@ impl JasmStatementVisitor<()> for WasmBuilderVisitor {
 
         // I think this covers the return case
         // https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-instr-control
-        self.function_builder.func_body().return_();
+        self.function_builder.get_mut().func_body().return_();
     }
 }
