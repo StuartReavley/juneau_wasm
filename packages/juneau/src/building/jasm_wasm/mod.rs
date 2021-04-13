@@ -1,140 +1,94 @@
-use crate::{core::Visitor, semantic::{Implementation, jasm::JasmPrimitiveImplementation}};
-use crate::{core::Id, semantic::{Function, Name, Parameter, Variable, jasm::{Block, Jasm, JasmExpression, JasmExpressionVisitor, JasmStatementVisitor, JasmType, JasmValue, Struct}}};
+mod visiting;
+pub use visiting::*;
+
 mod test;
 
+mod typ;
+
+mod visitor;
+use visitor::*;
+
+use crate::{
+    core::Id,
+    semantic::{
+        jasm::{
+            Block, Jasm, JasmExpression, JasmExpressionVisitor, JasmStatement,
+            JasmStatementVisitor, JasmType, JasmValue, Struct,
+        },
+        Function, FunctionType, Name, Parameter, Variable, BinaryOperator
+    },
+};
+use crate::{
+    core::{Visitor, VisitorWith},
+    semantic::{jasm::JasmPrimitiveImplementation, Implementation},
+};
+use std::{any::Any, rc::Rc, str::FromStr};
+use walrus::ir::*;
+use walrus::{FunctionBuilder, InstrSeqBuilder, LocalId, Module, ModuleConfig, ValType};
 
 
+pub fn compile_wasm(jasm: &Function<Jasm>) -> Vec<u8> {
+    let FunctionType { parameters, retrn } = jasm.get_type();
 
-pub fn compile_wasm(jasm:&Function<Jasm>) -> Vec<u8> {
+    // Construct a new Walrus module.
+    let config = ModuleConfig::new();
     
-    // this is the job entry point
+    // Convert from JasmType into ValType
+    let params: Vec<ValType> = parameters.iter().map(|x| ValType::from(x)).collect();
+    let results = ValType::from(&*retrn);
     
-    let mut visitor = WasmVisitor {buffer: vec![]};
-    visitor.visit(jasm);
+    // Build instance of wasm builder visitor
+    let mut func_jasm = WasmBuilderVisitor::new(config, &params, &[results]);
 
-    visitor.buffer
+    let func_name = String::from(&jasm.name);
+    func_jasm.name(func_name.clone());
+    
+    let param: Vec<LocalId> = params
+    .iter()
+    .map(|x| func_jasm.module.locals.add(*x))
+    .collect();
+    // func_jasm.visit_with(jasm, &mut module);
+    func_jasm.visit(jasm);
+    
+
+    let final_func = func_jasm.function_builder.finish(param, &mut func_jasm.module.funcs);
+
+    // Export the final function.
+    func_jasm.module.exports.add(&func_name, final_func);
+    
+    // emit wasm into buffer
+    func_jasm.module.emit_wasm()
 }
 
+pub fn compile_wasm_to_file(jasm: &Function<Jasm>) -> anyhow::Result<()> {
+    let FunctionType { parameters, retrn } = jasm.get_type();
 
+    // Construct a new Walrus module.
+    let config = ModuleConfig::new();
+    
+    // Convert from JasmType into ValType
+    let params: Vec<ValType> = parameters.iter().map(|x| ValType::from(x)).collect();
+    let results = ValType::from(&*retrn);
+    
+    // Build instance of wasm builder visitor
+    let mut func_jasm = WasmBuilderVisitor::new(config, &params, &[results]);
 
+    let func_name = String::from(&jasm.name);
+    func_jasm.name(func_name.clone());
+    
+    let param: Vec<LocalId> = params
+    .iter()
+    .map(|x| func_jasm.module.locals.add(*x))
+    .collect();
+    // func_jasm.visit_with(jasm, &mut module);
+    func_jasm.visit(jasm);
+    
 
-// SOME SUGGESTIONS TO GET YOU STARTED - DELETE / CHANGE - WHATEVER YOU WANT!
+    let final_func = func_jasm.function_builder.finish(param, &mut func_jasm.module.funcs);
 
-struct WasmVisitor {
-    buffer: Vec<u8>
-}
-
-
-impl Visitor<&Function<Jasm>, ()> for WasmVisitor {
-    fn visit(&mut self, function:&Function<Jasm>) -> () {
-        let Function {id, name, parameters, implementation} = function;
-
-        match implementation {
-            Implementation::Semantic((block, typ)) => {
-                // EXAMPLE OF VISITING STATEMENTS
-                for statement in &block.0 {
-                    self.visit(statement);
-                }
-            }
-            Implementation::Primitive(typ, primitive) => {
-                match primitive {
-                    JasmPrimitiveImplementation::External { is_pure, ptr } => panic!("not supported in wasm, only llvm"),
-                    JasmPrimitiveImplementation::Unary(number_type, operator) => {
-                        todo!()
-                    }
-                    JasmPrimitiveImplementation::Binary(number_type, operator) => {
-                        todo!()
-                    }
-                }
-            }
-        }
-    }
-}
-
-
-struct ExpressionResult {
-
-}
-
-impl JasmExpressionVisitor<ExpressionResult> for WasmVisitor {
-    fn visit_constant(&mut self, value:&JasmValue) -> ExpressionResult {
-        todo!()
-    }
-
-    fn visit_invocation(&mut self, id:Id, name:&Name, arguments:&Vec<JasmExpression>, return_typ:&JasmType) -> ExpressionResult {
+    // Export the final function.
+    func_jasm.module.exports.add(&func_name, final_func);
         
-        // EXAMPLE OF VISITING AN EXPRESSION
-        for argument in arguments {
-            self.visit(argument);
-        }
-        
-        todo!()
-    }
-
-    fn visit_variable(&mut self, variable:&Variable<Jasm>) -> ExpressionResult {
-        todo!()
-    }
-
-    fn visit_cast(&mut self, expression:&JasmExpression, typ:&JasmType) -> ExpressionResult {
-        todo!()
-    }
-
-    fn visit_struct_access(&mut self, object:&JasmExpression, id:Id, name:&Name, typ:&JasmType) -> ExpressionResult {
-        todo!()
-    }
-
-    fn visit_array_access(&mut self, object:&JasmExpression, index:&JasmExpression) -> ExpressionResult {
-        todo!()
-    }
-
-    fn visit_reference(&mut self, expression:&JasmExpression) -> ExpressionResult {
-        todo!()
-    }
-
-    fn visit_dereference(&mut self, expression:&JasmExpression) -> ExpressionResult {
-        todo!()
-    }
-}
-
-
-struct StatementResult {
-
-}
-
-impl JasmStatementVisitor<StatementResult> for WasmVisitor {
-    fn visit_empty(&mut self) -> StatementResult {
-        todo!()
-    }
-
-    fn visit_declaration(&mut self, variable:&Variable<Jasm>) -> StatementResult {
-        todo!()
-    }
-
-    fn visit_assign(&mut self, object:&JasmExpression, expression:&JasmExpression) -> StatementResult {
-        todo!()
-    }
-
-    fn visit_if(&mut self, thens:&Vec<(JasmExpression, Block)>, els:&Block) -> StatementResult {
-        todo!()
-    }
-
-    fn visit_while(&mut self, condition:&JasmExpression, body:&Block) -> StatementResult {
-        todo!()
-    }
-
-    fn visit_struct_definition(&mut self, definition:&Struct<Parameter<Jasm>>) -> StatementResult {
-        panic!("not supported in wasm, only llvm")
-    }
-
-    fn visit_function(&mut self, function:&std::rc::Rc<Function<Jasm>>) -> StatementResult {
-        todo!()
-    }
-
-    fn visit_expression(&mut self, expression:&JasmExpression) -> StatementResult {
-        todo!()
-    }
-
-    fn visit_return(&mut self, expression:&Option<JasmExpression>) -> StatementResult {
-        todo!()
-    }
+    // emit wasm into buffer
+    func_jasm.module.emit_wasm_file("target/out.wasm")
 }
