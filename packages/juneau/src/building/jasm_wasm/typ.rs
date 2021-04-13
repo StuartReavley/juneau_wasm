@@ -11,8 +11,8 @@ use crate::{
 use walrus::ValType;
 use wasmer::Val;
 
-impl<'n> From<&'n JasmType> for ValType {
-    fn from(typ: &'n JasmType) -> Self {
+impl From<&JasmType> for ValType {
+    fn from(typ: &JasmType) -> Self {
         match typ {
             JasmType::Bool => ValType::I32,
             JasmType::U8 => ValType::I32,
@@ -21,10 +21,10 @@ impl<'n> From<&'n JasmType> for ValType {
             JasmType::F64 => ValType::F64,
             JasmType::String => ValType::I32,
             JasmType::Void => panic!("not supported in wasm, only llvm"),
-            JasmType::Pointer(jasmType) => Self::from(&**jasmType), // TODO: find alternatives to &**
-            JasmType::Function(funcType) => ValType::Funcref,
-            JasmType::Struct(id, name) => panic!("not supported in wasm, only llvm"),
-            JasmType::Array(jasmType) => Self::from(&**jasmType),
+            JasmType::Pointer(jasm_type) => Self::from(jasm_type.as_ref()), // TODO: find alternatives to &**
+            JasmType::Function(_func_type) => ValType::Funcref,
+            JasmType::Struct(_id, _name) => panic!("not supported in wasm, only llvm"),
+            JasmType::Array(jasm_type) => Self::from(jasm_type.as_ref()),
         }
     }
 }

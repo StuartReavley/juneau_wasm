@@ -62,6 +62,6 @@ impl<'n> From<&'n Name> for &'n str {
 
 impl<'n> From<&'n Name> for String {
     fn from(value: &'n Name) -> Self {
-        value.0.as_str().to_owned()
+        value.0.as_ref().to_owned()
     }
 }
