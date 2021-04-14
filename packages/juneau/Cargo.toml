@@ -5,6 +5,7 @@ edition = "2018"
 
 [dependencies]
 antlr-rust = "=0.2.0-dev.2"
+llvm-sys = "100"
 enum_dispatch = "0.3.5"
 libc = "0.2"
 num_cpus = "1.13.0"

@@ -62,7 +62,6 @@ impl JasmStatementVisitor<()> for WasmBuilderVisitor {
         &mut self,
         function: &std::rc::Rc<Function<Jasm>>,
     ) -> () {
-        println!("Function statement\n");
         self.visit(function.as_ref());
     }
 
@@ -75,5 +74,9 @@ impl JasmStatementVisitor<()> for WasmBuilderVisitor {
         if let Some(jexpr) = expression {
             self.visit(jexpr);
         }
+
+        // I think this covers the return case
+        // https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-instr-control
+        self.function_builder.get_mut().func_body().return_();
     }
 }

@@ -1,15 +1,12 @@
-use crate::{
-    core::Id,
-    semantic::{
+use crate::{building::BuildVisitor, core::Id, semantic::{
         jasm::{
             Block, Jasm, JasmExpression, JasmExpressionVisitor, JasmStatement,
             JasmStatementVisitor, JasmType, JasmValue, Struct,
         },
         Function, FunctionType, Name, Parameter, Variable, BinaryOperator
-    },
-};
+    }};
 use crate::{
-    core::{Visitor, VisitorWith},
+    core::{Visitor, Visits, VisitorWith},
     semantic::{jasm::JasmPrimitiveImplementation, Implementation},
 };
 use crate::building::jasm_wasm::visitor::*;
@@ -21,25 +18,25 @@ impl JasmExpressionVisitor<()> for WasmBuilderVisitor {
     fn visit_constant(&mut self, value: &JasmValue) -> () {
         match value {
             JasmValue::Null => {
-                self.function_builder.func_body().i32_const(0);
+                self.function_builder.get_mut().func_body().i32_const(0);
             },
             JasmValue::Bool(val) => {
-                self.function_builder.func_body().i32_const(0);
+                self.function_builder.get_mut().func_body().i32_const(0);
             },
             JasmValue::U8(val) => {
-                self.function_builder.func_body().i32_const(*val as i32);
+                self.function_builder.get_mut().func_body().i32_const(*val as i32);
             },
             JasmValue::I64(val) => {
-                self.function_builder.func_body().i64_const(*val);
+                self.function_builder.get_mut().func_body().i64_const(*val);
             },
             JasmValue::U64(val) => {
-                self.function_builder.func_body().i64_const(*val as i64);
+                self.function_builder.get_mut().func_body().i64_const(*val as i64);
             },
             JasmValue::F64(val) => {
-                self.function_builder.func_body().f64_const(*val);
+                self.function_builder.get_mut().func_body().f64_const(*val);
             },
             JasmValue::String(val) => {
-                self.function_builder.func_body().i32_const(0);
+                self.function_builder.get_mut().func_body().i32_const(0);
             }
         }
     }
@@ -52,29 +49,33 @@ impl JasmExpressionVisitor<()> for WasmBuilderVisitor {
         return_typ: &JasmType,
     ) -> () {
         let return_type = ValType::from(return_typ);
-        for argument in arguments {
-            self.visit(argument);
-        }
         let operator = String::from(name);
-        let ops = match FromStr::from_str(&operator) {
-            Ok(BinaryOperator::Add) => {
-                match return_type {
-                    ValType::I64 => BinaryOp::I64Add,
-                    // TODO: Complete the remaining ValType
-                    _ => BinaryOp::I64Sub
-                }
-            },
-            _ => BinaryOp::I64Sub
-        };
-        self.function_builder.func_body().binop(ops);
+
+        self.visits(arguments);
+        
+        if let Ok(binops) = FromStr::from_str(&operator) {
+            let ops = match binops {
+                BinaryOperator::Add => {
+                    match return_type {
+                        ValType::I64 => BinaryOp::I64Add,
+                        // TODO: Complete the remaining ValType
+                        _ => BinaryOp::I64Add
+                    }
+                },
+                _ => BinaryOp::I64Sub
+            };
+            self.function_builder.get_mut().func_body().binop(ops);
+        } else {
+            let func_id = self.module.funcs.by_name(&operator).unwrap();
+            self.function_builder.get_mut().func_body().call(func_id);
+        }
     }
 
     fn visit_variable(&mut self, variable: &Variable<Jasm>) -> () {
-        let index = (variable.id.value - 1001) as usize;
-        let locals: Vec<&Local> = self.module.locals.iter().collect();
-        if locals.len() > 0 {
-            self.function_builder.func_body().local_get(locals[index].id());
-        }
+        // here, instead of subtracting 1001, we need to store the variable IDs, and then call 'get_variable'
+        let Variable {id, name, ..} = variable;
+        let local = self.get_variable(*id, name);
+        self.function_builder.get_mut().func_body().local_get(local);
     }
 
     fn visit_cast(

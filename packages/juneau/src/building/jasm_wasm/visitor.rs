@@ -1,13 +1,7 @@
-use crate::{
-    core::Id,
-    semantic::{
-        jasm::{
+use crate::{building::{BuildVisitor, BuildVisitorInner}, core::{Id, IdContext, IdProvider, Stack}, semantic::{BinaryOperator, Function, FunctionType, Functions, Name, Parameter, Variable, jasm::{
             Block, Jasm, JasmExpression, JasmExpressionVisitor, JasmStatement,
             JasmStatementVisitor, JasmType, JasmValue, Struct,
-        },
-        Function, FunctionType, Name, Parameter, Variable, BinaryOperator
-    },
-};
+        }}};
 use crate::{
     core::{Visitor, VisitorWith},
     semantic::{jasm::JasmPrimitiveImplementation, Implementation},
@@ -16,62 +10,41 @@ use std::{any::Any, rc::Rc, str::FromStr};
 use walrus::ir::*;
 use walrus::{FunctionBuilder, InstrSeqBuilder, LocalId, Module, ModuleConfig, ValType};
 
+use super::JasmWasmBuild;
+
 pub struct WasmBuilderVisitor {
     pub module: Module,
-    pub function_builder: FunctionBuilder
+    pub function_builder: Stack<FunctionBuilder>,
+    // BuildVisitorInner is a helper struct to keep track of functions and variables
+    inner: BuildVisitorInner<JasmWasmBuild>
 }
 
 impl WasmBuilderVisitor {
-    pub fn new(config:ModuleConfig, params:&[ValType], results:&[ValType]) -> WasmBuilderVisitor {
-        let mut module = Module::with_config(config);
-        let mut function_builder = FunctionBuilder::new(&mut module.types, params, results);
+    pub fn new() -> WasmBuilderVisitor {
+        // Construct a new Walrus module.
+        let config = ModuleConfig::new();
+        let module = Module::with_config(config);
+        let ids = IdProvider::new_cell(1001);
+        let function_builder = Stack::new();
+        let inner = BuildVisitorInner::new(ids, Functions::new());
         WasmBuilderVisitor {
-            module: module,
-            function_builder: function_builder
-        }
-    }
-
-    
-    pub fn name(&mut self, name:String) -> () {
-        self.function_builder.name(name);
-    }
-}
-
-impl Visitor<&Function<Jasm>, ()> for WasmBuilderVisitor {
-    fn visit(&mut self, function: &Function<Jasm>) -> () {
-        let Function {
-            id,
-            name,
-            parameters,
-            implementation,
-        } = function;
-
-        match implementation {
-            Implementation::Semantic((block, typ)) => {
-                // EXAMPLE OF VISITING STATEMENTS
-                for statement in &block.0 {
-                    self.visit(statement);
-                }
-            }
-            Implementation::Primitive(typ, primitive) => match primitive {
-                JasmPrimitiveImplementation::External { is_pure, ptr } => {
-                    panic!("not supported in wasm, only llvm")
-                }
-                JasmPrimitiveImplementation::Unary(number_type, operator) => {
-                    println!(
-                        "Unary\nnumber_type: {:#?}\ntype: {:?}\noperator: {:?}\n",
-                        number_type, typ, operator
-                    );
-                    todo!()
-                }
-                JasmPrimitiveImplementation::Binary(number_type, operator) => {
-                    println!(
-                        "Unary\nnumber_type: {:#?}\ntype: {:?}\noperator: {:?}\n",
-                        number_type, typ, operator
-                    );
-                    todo!()
-                }
-            },
+            module,
+            function_builder,
+            inner
         }
     }
 }
+
+
+impl BuildVisitor<JasmWasmBuild> for WasmBuilderVisitor {
+    fn get_inner(&self) -> &BuildVisitorInner<JasmWasmBuild> {
+        &self.inner
+    }
+    fn get_inner_mut(&mut self) -> &mut BuildVisitorInner<JasmWasmBuild> {
+        &mut self.inner
+    }
+    fn move_inner(self) -> BuildVisitorInner<JasmWasmBuild> {
+        self.inner
+    }
+}
+

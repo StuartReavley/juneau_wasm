@@ -15,10 +15,9 @@ fn test_2() {
     }"#; // JASM
     let mut parse_context = new_default_context();
     let jasm = parse_jasm_function(&mut parse_context, source);
-    
+    // println!("{:#?}", jasm);
     
     let wasm_bytes = compile_wasm(&jasm);
-    println!("{:#?}", &wasm_bytes);
     // Set up Wasmer, which runs the WebAssembly inside our tests
     let compiler_config = Cranelift::default();
     let engine = JIT::new(compiler_config).engine();
