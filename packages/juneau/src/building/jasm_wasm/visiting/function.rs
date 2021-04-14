@@ -33,6 +33,7 @@ impl Visitor<&Function<Jasm>, ()> for WasmBuilderVisitor {
         function_builder.name(name.clone());
 
         self.function_builder.push(function_builder);
+        
         let parameters = self.visits(parameters);
 
         match implementation {
