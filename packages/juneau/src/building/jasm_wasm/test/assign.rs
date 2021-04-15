@@ -8,12 +8,17 @@ use super::new_default_visitors;
 
 
 #[test]
-fn test_1() {
+fn wasm_assign() {
     // This is jasm code in string form. Check out packages/juneau/src/parsing/jasm/test folder for more examples of jasm in string form
-    let source = "function add(a:i64, b:i64):i64 {return a + b;}"; // JASM
-    let (mut parse_context, mut build_context) = new_default_visitors();
+    let source = r#"function main():i64 {
+        let a:i64;
+        a = 4;
+        return a;
+    }"#; // JASM
+    let mut parse_context = new_default_context();
     let jasm = parse_jasm_function(&mut parse_context, source);
-    let wasm_bytes = build_wasm_function(&mut build_context, &jasm);
+    println!("{:#?}", &jasm);
+    let wasm_bytes = compile_wasm(&jasm);
     
     // Set up Wasmer, which runs the WebAssembly inside our tests
     let compiler_config = Cranelift::default();
@@ -22,8 +27,8 @@ fn test_1() {
     let module = Module::new(&store, wasm_bytes).unwrap();
     let import_object = imports! {};
     let instance = Instance::new(&module, &import_object).unwrap();
-    let add = instance.exports.get_function("add").unwrap();
+    let add = instance.exports.get_function("main").unwrap();
     // execute the wasm function
-    let results = add.call(&[Value::I64(1), Value::I64(2)]).unwrap();
-    assert_eq!(results.to_vec(), vec![Value::I64(3)]);
+    let results = add.call(&[]).unwrap();
+    assert_eq!(results.to_vec(), vec![Value::I64(4)]);
 }

@@ -13,6 +13,7 @@ use crate::{
     semantic::{jasm::JasmPrimitiveImplementation, Implementation},
 };
 use crate::building::jasm_wasm::visitor::*;
+use crate::building::BuildVisitor;
 use std::{any::Any, rc::Rc, str::FromStr};
 use walrus::ir::*;
 use walrus::{FunctionBuilder, InstrSeqBuilder, LocalId, Module, ModuleConfig, ValType};
@@ -24,8 +25,7 @@ impl JasmStatementVisitor<()> for WasmBuilderVisitor {
     }
 
     fn visit_declaration(&mut self, variable: &Variable<Jasm>) -> () {
-        println!("Declaration statement\n");
-        todo!()
+        self.visit(variable);
     }
 
     fn visit_assign(
@@ -33,8 +33,13 @@ impl JasmStatementVisitor<()> for WasmBuilderVisitor {
         object: &JasmExpression,
         expression: &JasmExpression,
     ) -> () {
-        println!("Assign statement\n");
-        todo!()
+        use JasmExpression::*;
+        let local = match object {
+            Var(Variable{id, name, ..}) => self.get_variable(*id, name),
+            object => panic!(format!("invalid assignment {:?}", object))
+        };
+        self.visit(expression);
+        self.function_builder.get_mut().func_body().local_set(local);
     }
 
     fn visit_if(
@@ -75,7 +80,6 @@ impl JasmStatementVisitor<()> for WasmBuilderVisitor {
             self.visit(jexpr);
         }
 
-        // I think this covers the return case
         // https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-instr-control
         self.function_builder.get_mut().func_body().return_();
     }
