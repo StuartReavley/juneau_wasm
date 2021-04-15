@@ -9,16 +9,31 @@ use std::{fs::File, io::{BufReader, Cursor}};
 // use calculation::delta::Delta;
 // use calculation::nodes::where_::WhereNode;
 
+
 mod core;
 mod semantic;
 mod parsing;
+use crate::parsing::jasm::parse_jasm_function;
+use crate::parsing::jasm::test::new_default_context;
 mod building;
+use building::jasm_wasm::compile_wasm_to_file;
 mod stdl;
 mod target;
 
-fn main() {
+use anyhow;
+
+fn main() -> anyhow::Result<()> {
     let _some_value = 123;
-    println!("Hello World!");
+    let source = r#"function main():i64 {
+        function add(a:i64, b:i64):i64 {return a + b;}
+        return add(6, 5);
+    }"#; // JASM
+    let mut parse_context = new_default_context();
+    let jasm = parse_jasm_function(&mut parse_context, source);
+    
+    
+    compile_wasm_to_file(&jasm)
+
 
 }
 
