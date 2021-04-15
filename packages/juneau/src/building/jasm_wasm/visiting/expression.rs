@@ -3,7 +3,7 @@ use crate::{building::BuildVisitor, core::Id, semantic::{
             Block, Jasm, JasmExpression, JasmExpressionVisitor, JasmStatement,
             JasmStatementVisitor, JasmType, JasmValue, Struct,
         },
-        Function, FunctionType, Name, Parameter, Variable, BinaryOperator
+        Function, FunctionType, Name, Parameter, Variable, BinaryOperator, UnaryOperator
     }};
 use crate::{
     core::{Visitor, Visits, VisitorWith},
@@ -13,6 +13,8 @@ use crate::building::jasm_wasm::visitor::*;
 use std::{any::Any, rc::Rc, str::FromStr};
 use walrus::ir::*;
 use walrus::{FunctionBuilder, InstrSeqBuilder, LocalId, Module, ModuleConfig, ValType};
+use crate::semantic::jasm::NumberType;
+
 
 impl JasmExpressionVisitor<()> for WasmBuilderVisitor {
     fn visit_constant(&mut self, value: &JasmValue) -> () {
@@ -26,27 +28,30 @@ impl JasmExpressionVisitor<()> for WasmBuilderVisitor {
         arguments: &Vec<JasmExpression>,
         return_typ: &JasmType,
     ) -> () {
-        let return_type = self.visit(return_typ);
-        let operator = String::from(name);
 
         self.visits(arguments);
-        
-        if let Ok(binops) = FromStr::from_str(&operator) {
-            let ops = match binops {
-                BinaryOperator::Add => {
-                    match return_type {
-                        ValType::I64 => BinaryOp::I64Add,
-                        // TODO: Complete the remaining ValType
-                        _ => BinaryOp::I64Add
-                    }
-                },
-                _ => BinaryOp::I64Sub
-            };
-            self.function_builder.get_mut().func_body().binop(ops);
-        } else {
-            let func_id = self.module.funcs.by_name(&operator).unwrap();
-            self.function_builder.get_mut().func_body().call(func_id);
-        }
+        let function = self.get_function(id, name);
+        let built_function = self.visit(&function);
+
+        let mut func_body = self.function_builder.get_mut().func_body();
+
+        use Implementation::*;
+        use JasmPrimitiveImplementation::*;
+        use NumberType::*;
+        use BinaryOperator::*;
+        use UnaryOperator::*;
+        use JasmType::*;
+        match built_function {
+            Some(function) => func_body.call(function),
+            None => match function.implementation {
+
+                Primitive(I64, Binary(_, Add)) => func_body.binop(BinaryOp::I64Add),
+
+                // TODO: Complete the remaining ValType
+
+                _ => panic!(format!("invalid implementation {:?}", &function.implementation))
+            }
+        };
     }
 
     fn visit_variable(&mut self, variable: &Variable<Jasm>) -> () {

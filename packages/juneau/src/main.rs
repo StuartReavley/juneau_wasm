@@ -16,7 +16,8 @@ mod parsing;
 use crate::parsing::jasm::parse_jasm_function;
 use crate::parsing::jasm::test::new_default_context;
 mod building;
-use building::jasm_wasm::compile_wasm_to_file;
+use building::jasm_wasm::build_wasm_function_to_file;
+use building::jasm_wasm::test::new_default_visitors;
 mod stdl;
 mod target;
 
@@ -28,11 +29,11 @@ fn main() -> anyhow::Result<()> {
         function add(a:i64, b:i64):i64 {return a + b;}
         return add(6, 5);
     }"#; // JASM
-    let mut parse_context = new_default_context();
-    let jasm = parse_jasm_function(&mut parse_context, source);
+    let (mut parse_visitor, mut build_visitor) = new_default_visitors();
+    let jasm = parse_jasm_function(&mut parse_visitor, source);
     
     
-    compile_wasm_to_file(&jasm)
+    build_wasm_function_to_file(&mut build_visitor, &jasm)
 
 
 }

@@ -60,9 +60,9 @@ impl JasmStatementVisitor<()> for WasmBuilderVisitor {
 
     fn visit_function(
         &mut self,
-        function: &std::rc::Rc<Function<Jasm>>,
+        function: &Rc<Function<Jasm>>,
     ) -> () {
-        self.visit(function.as_ref());
+        self.visit(function);
     }
 
     fn visit_expression(&mut self, expression: &JasmExpression) -> () {
