@@ -16,29 +16,7 @@ use walrus::{FunctionBuilder, InstrSeqBuilder, LocalId, Module, ModuleConfig, Va
 
 impl JasmExpressionVisitor<()> for WasmBuilderVisitor {
     fn visit_constant(&mut self, value: &JasmValue) -> () {
-        match value {
-            JasmValue::Null => {
-                self.function_builder.get_mut().func_body().i32_const(0);
-            },
-            JasmValue::Bool(val) => {
-                self.function_builder.get_mut().func_body().i32_const(0);
-            },
-            JasmValue::U8(val) => {
-                self.function_builder.get_mut().func_body().i32_const(*val as i32);
-            },
-            JasmValue::I64(val) => {
-                self.function_builder.get_mut().func_body().i64_const(*val);
-            },
-            JasmValue::U64(val) => {
-                self.function_builder.get_mut().func_body().i64_const(*val as i64);
-            },
-            JasmValue::F64(val) => {
-                self.function_builder.get_mut().func_body().f64_const(*val);
-            },
-            JasmValue::String(val) => {
-                self.function_builder.get_mut().func_body().i32_const(0);
-            }
-        }
+        self.visit(value)
     }
 
     fn visit_invocation(
