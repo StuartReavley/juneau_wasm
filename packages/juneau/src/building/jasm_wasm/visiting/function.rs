@@ -17,8 +17,8 @@ impl Visitor<&Function<Jasm>, ()> for WasmBuilderVisitor {
         let FunctionType { parameters, retrn } = function.get_type();
 
         // Convert from JasmType into ValType
-        let params: Vec<ValType> = parameters.iter().map(|x| ValType::from(x)).collect();
-        let results = ValType::from(&*retrn);
+        let params = self.visits(&parameters);
+        let results = self.visit(&*retrn);
         let mut function_builder = FunctionBuilder::new(&mut self.module.types, &params, &[results]);
 
 

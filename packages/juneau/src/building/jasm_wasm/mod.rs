@@ -3,7 +3,6 @@ pub use visiting::*;
 
 mod test;
 
-mod typ;
 
 mod visitor;
 use visitor::*;

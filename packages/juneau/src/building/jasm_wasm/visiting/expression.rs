@@ -48,7 +48,7 @@ impl JasmExpressionVisitor<()> for WasmBuilderVisitor {
         arguments: &Vec<JasmExpression>,
         return_typ: &JasmType,
     ) -> () {
-        let return_type = ValType::from(return_typ);
+        let return_type = self.visit(return_typ);
         let operator = String::from(name);
 
         self.visits(arguments);
