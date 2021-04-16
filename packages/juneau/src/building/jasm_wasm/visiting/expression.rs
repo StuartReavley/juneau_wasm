@@ -1,4 +1,4 @@
-use crate::{building::BuildVisitor, core::Id, semantic::{
+use crate::{building::{BuildVisitor, jasm_wasm::typ::WasmOperatorBuilder}, core::Id, semantic::{
         jasm::{
             Block, Jasm, JasmExpression, JasmExpressionVisitor, JasmStatement,
             JasmStatementVisitor, JasmType, JasmValue, Struct,
@@ -28,7 +28,6 @@ impl JasmExpressionVisitor<()> for WasmBuilderVisitor {
         arguments: &Vec<JasmExpression>,
         return_typ: &JasmType,
     ) -> () {
-
         self.visits(arguments);
         let function = self.get_function(id, name);
         let built_function = self.visit(&function);
@@ -52,6 +51,21 @@ impl JasmExpressionVisitor<()> for WasmBuilderVisitor {
                 _ => panic!(format!("invalid implementation {:?}", &function.implementation))
             }
         };
+
+        // TODO: Change the following code and combine with the above
+        let return_type = ValType::from(return_typ);
+        let operator = String::from(name);
+        self.visits(arguments);
+        
+        if let Ok(binops) = FromStr::from_str(&operator) {
+            let wasm_operator = &WasmOperatorBuilder::new(binops, return_type
+            );
+            let ops = BinaryOp::from(wasm_operator);
+            self.function_builder.get_mut().func_body().binop(ops);
+        } else {
+            let func_id = self.module.funcs.by_name(&operator).unwrap();
+            self.function_builder.get_mut().func_body().call(func_id);
+        }
     }
 
     fn visit_variable(&mut self, variable: &Variable<Jasm>) -> () {
