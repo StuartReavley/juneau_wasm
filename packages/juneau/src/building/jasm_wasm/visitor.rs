@@ -6,7 +6,7 @@ use crate::{
     core::{Visitor, VisitorWith},
     semantic::{jasm::JasmPrimitiveImplementation, Implementation},
 };
-use std::{any::Any, rc::Rc, str::FromStr};
+use std::{any::Any, cell::RefCell, rc::Rc, str::FromStr};
 use walrus::ir::*;
 use walrus::{FunctionBuilder, InstrSeqBuilder, LocalId, Module, ModuleConfig, ValType};
 
@@ -20,13 +20,12 @@ pub struct WasmBuilderVisitor {
 }
 
 impl WasmBuilderVisitor {
-    pub fn new() -> WasmBuilderVisitor {
+    pub fn new(ids:Rc<RefCell<IdProvider>>, functions:Functions<Jasm>) -> WasmBuilderVisitor {
         // Construct a new Walrus module.
         let config = ModuleConfig::new();
         let module = Module::with_config(config);
-        let ids = IdProvider::new_cell(1001);
         let function_builder = Stack::new();
-        let inner = BuildVisitorInner::new(ids, Functions::new());
+        let inner = BuildVisitorInner::new(ids, functions);
         WasmBuilderVisitor {
             module,
             function_builder,

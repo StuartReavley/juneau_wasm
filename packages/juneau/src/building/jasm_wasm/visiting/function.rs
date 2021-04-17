@@ -7,70 +7,45 @@ core::{Visitor, VisitorWith},
 semantic::{jasm::JasmPrimitiveImplementation, Implementation},
 };
 use std::{any::Any, rc::Rc, str::FromStr};
-use walrus::ir::*;
+use walrus::{FunctionId, ir::*};
 use walrus::{FunctionBuilder, InstrSeqBuilder, LocalId, Module, ModuleConfig, ValType};
 
 
-impl Visitor<&Function<Jasm>, ()> for WasmBuilderVisitor {
-    fn visit(&mut self, function: &Function<Jasm>) -> () {
-
-        let FunctionType { parameters, retrn } = function.get_type();
-
-        // Convert from JasmType into ValType
-        let params: Vec<ValType> = parameters.iter().map(|x| ValType::from(x)).collect();
-        let results = ValType::from(&*retrn);
-        let mut function_builder = FunctionBuilder::new(&mut self.module.types, &params, &[results]);
-
-
-        let Function {
-            id,
-            name,
-            parameters,
-            implementation,
-        } = function;
-
-        let name:String = name.into();
-        function_builder.name(name.clone());
-
-        self.function_builder.push(function_builder);
-
-
-        let parameters = self.visits(parameters);
-        
-
-        match implementation {
-            Implementation::Semantic((block, typ)) => {
-                // EXAMPLE OF VISITING STATEMENTS
-                for statement in &block.0 {
-                    self.visit(statement);
+impl Visitor<&Rc<Function<Jasm>>, Option<FunctionId>> for WasmBuilderVisitor {
+    fn visit(&mut self, function: &Rc<Function<Jasm>>) -> Option<FunctionId> {
+        self.resolve_module_function(function.to_owned(), |visitor| {
+            let Function {name, parameters, implementation, ..} = function.as_ref();
+            use Implementation::*;
+            use JasmPrimitiveImplementation::*;
+            match implementation {
+                Primitive(_, External{ptr, ..}) => {
+                    todo!()
+                }
+                Primitive(_, _) => None,
+                Semantic((block, _)) => {
+                    let mut function_builder = {
+                        let FunctionType { parameters, retrn } = function.get_type();
+                        // Convert from JasmType into ValType
+                        let params = visitor.visits(&parameters);
+                        let results = visitor.visit(&*retrn);
+                        FunctionBuilder::new(&mut visitor.module.types, &params, &[results])
+                    };
+            
+                    let name:String = name.into();
+                    function_builder.name(name.clone());
+            
+                    visitor.function_builder.push(function_builder);
+                    
+                    let parameters = visitor.visits(parameters);
+            
+                    visitor.visits(&block.0);
+                            
+                    let function = visitor.function_builder.pop().finish(parameters, &mut visitor.module.funcs);
+                    // Export the final function.
+                    visitor.module.exports.add(&name, function);
+                    Some(function)
                 }
             }
-            Implementation::Primitive(typ, primitive) => match primitive {
-                JasmPrimitiveImplementation::External { is_pure, ptr } => {
-                    panic!("not supported in wasm, only llvm")
-                }
-                JasmPrimitiveImplementation::Unary(operator) => {
-                    println!(
-                        "Unary\nnumber_type: {:?}\noperator: {:?}\n",
-                        typ, operator
-                    );
-                    todo!()
-                }
-                JasmPrimitiveImplementation::Binary(operator) => {
-                    println!(
-                        "Unary\nnumber_type: {:?}\noperator: {:?}\n",
-                        typ, operator
-                    );
-                    todo!()
-                }
-            },
-        }
-
-        let final_func = self.function_builder.pop().finish(parameters, &mut self.module.funcs);
-
-
-        // Export the final function.
-        self.module.exports.add(&name, final_func);
-    
+        })
     }
 }

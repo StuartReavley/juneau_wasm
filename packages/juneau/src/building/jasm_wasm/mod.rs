@@ -1,9 +1,8 @@
 mod visiting;
 pub use visiting::*;
 
-mod test;
+pub mod test;
 
-mod typ;
 
 mod visitor;
 use visitor::*;
@@ -34,28 +33,18 @@ use walrus::ir::*;
 use walrus::{FunctionBuilder, InstrSeqBuilder, LocalId, Module, ModuleConfig, ValType};
 
 
-pub fn compile_wasm(jasm: &Function<Jasm>) -> Vec<u8> {
+pub fn build_wasm_function(visitor:&mut WasmBuilderVisitor, jasm: &Rc<Function<Jasm>>) -> Vec<u8> {
 
-        
-    // Build instance of wasm builder visitor
-    let mut func_jasm = WasmBuilderVisitor::new();
+    visitor.visit(jasm);
 
-    func_jasm.visit(jasm);
-    
-
-    
     // emit wasm into buffer
-    func_jasm.module.emit_wasm()
+    visitor.module.emit_wasm()
 }
 
-pub fn compile_wasm_to_file(jasm: &Function<Jasm>) -> anyhow::Result<()> {
-    // Build instance of wasm builder visitor
-    let mut func_jasm = WasmBuilderVisitor::new();
+pub fn build_wasm_function_to_file(visitor:&mut WasmBuilderVisitor, jasm: &Rc<Function<Jasm>>) -> anyhow::Result<()> {
 
-    func_jasm.visit(jasm);
+    visitor.visit(jasm);
     
-
-        
     // emit wasm into buffer
-    func_jasm.module.emit_wasm_file("target/out.wasm")
+    visitor.module.emit_wasm_file("target/out.wasm")
 }
