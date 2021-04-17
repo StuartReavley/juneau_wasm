@@ -10,7 +10,7 @@ mod member;
 pub use member::*;
 
 mod primitive;
-pub use primitive::{JasmPrimitiveImplementation, NumberType};
+pub use primitive::*;
 
 pub mod render;
 

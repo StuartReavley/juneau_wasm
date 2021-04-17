@@ -49,17 +49,17 @@ impl Visitor<&Function<Jasm>, ()> for WasmBuilderVisitor {
                 JasmPrimitiveImplementation::External { is_pure, ptr } => {
                     panic!("not supported in wasm, only llvm")
                 }
-                JasmPrimitiveImplementation::Unary(number_type, operator) => {
+                JasmPrimitiveImplementation::Unary(operator) => {
                     println!(
-                        "Unary\nnumber_type: {:#?}\ntype: {:?}\noperator: {:?}\n",
-                        number_type, typ, operator
+                        "Unary\nnumber_type: {:?}\noperator: {:?}\n",
+                        typ, operator
                     );
                     todo!()
                 }
-                JasmPrimitiveImplementation::Binary(number_type, operator) => {
+                JasmPrimitiveImplementation::Binary(operator) => {
                     println!(
-                        "Unary\nnumber_type: {:#?}\ntype: {:?}\noperator: {:?}\n",
-                        number_type, typ, operator
+                        "Unary\nnumber_type: {:?}\noperator: {:?}\n",
+                        typ, operator
                     );
                     todo!()
                 }
