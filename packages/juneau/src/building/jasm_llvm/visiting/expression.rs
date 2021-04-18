@@ -3,7 +3,7 @@ use std::ffi::c_void;
 use crate::{building::jasm_llvm::JasmModuleBuildVisitor, core::Id, semantic::{Parameter, jasm::{Jasm, JasmExpressionVisitor, JasmStatement, JasmStatementVisitor, JasmValue, Member}}};
 use crate::core::{Visitor, Visits};
 use crate::semantic::{Name, GetType, Variable, Implementation};
-use crate::semantic::jasm::{Struct, UnaryOperator, JasmType, JasmExpression, JasmPrimitiveImplementation};
+use crate::semantic::jasm::{Struct, UnaryOperator, JasmType, JasmExpression, JasmPrimitiveImplementation, NumberType};
 use crate::target::llvm::{FunctionPassManager, StructType, GetContext, Predicate, BasicBlock, Builder, Context, ExecutionEngine, Function, Module, Value, Type};
 use crate::building::BuildVisitor;
 use super::parameter;
@@ -14,7 +14,7 @@ impl<'l> JasmExpressionVisitor<&'l Value> for JasmModuleBuildVisitor<'l> {
         self.visit(value)
     }
 
-    fn visit_invocation(&mut self, id:Id, name:&Name, arguments:&Vec<JasmExpression>, return_typ:&JasmType) -> &'l Value {
+    fn visit_invocation(&mut self, id:Id, name:&Name, arguments:&Vec<JasmExpression>, _return_typ:&JasmType) -> &'l Value {
         let builder = self.get_builder();
         let arguments = self.visits(arguments);
         let function = self.get_function(id, name);
@@ -24,48 +24,53 @@ impl<'l> JasmExpressionVisitor<&'l Value> for JasmModuleBuildVisitor<'l> {
         use crate::semantic::jasm::NumberType::*;
         use crate::semantic::BinaryOperator::*;
         use crate::semantic::UnaryOperator::*;
-        From::from(match built_function {
-            Some(function) => builder.build_call(function, &arguments),
-            None => match function.implementation {
-                Primitive(_, Unary(UnsignedInteger, Not)) => builder.build_not(arguments[0]),
-                Primitive(_, Unary(SignedInteger, Not)) => builder.build_not(arguments[0]),
-                Primitive(_, Unary(UnsignedInteger, Negate)) => builder.build_integer_negate(arguments[0]),
-                Primitive(_, Unary(SignedInteger, Negate)) => builder.build_integer_negate(arguments[0]),
-                Primitive(_, Unary(Float, Negate)) => builder.build_float_negate(arguments[0]),
+        From::from(match (built_function, &function.implementation) {
+            (Some(function), _) => builder.build_call(function, &arguments),
+            (None, Primitive(typ, implementation)) => {
+                let typ:NumberType = typ.into();
+                match (typ, implementation) {
+                    (UnsignedInteger, Unary(Not)) => builder.build_not(arguments[0]),
+                    (SignedInteger, Unary(Not)) => builder.build_not(arguments[0]),
+                    (UnsignedInteger, Unary(Negate)) => builder.build_integer_negate(arguments[0]),
+                    (SignedInteger, Unary(Negate)) => builder.build_integer_negate(arguments[0]),
+                    (Float, Unary(Negate)) => builder.build_float_negate(arguments[0]),
 
-                Primitive(_, Binary(UnsignedInteger  , Add)) => builder.build_integer_add(arguments[0], arguments[1]),
-                Primitive(_, Binary(SignedInteger  , Add)) => builder.build_integer_add(arguments[0], arguments[1]),
-                Primitive(_, Binary(Float  , Add)) => builder.build_float_add(arguments[0], arguments[1]),
-                Primitive(_, Binary(UnsignedInteger  , Subtract)) => builder.build_integer_subtract(arguments[0], arguments[1]),
-                Primitive(_, Binary(SignedInteger  , Subtract)) => builder.build_integer_subtract(arguments[0], arguments[1]),
-                Primitive(_, Binary(Float  , Subtract)) => builder.build_float_subtract(arguments[0], arguments[1]),
-                Primitive(_, Binary(UnsignedInteger  , Multiply)) => builder.build_integer_multiply(arguments[0], arguments[1]),
-                Primitive(_, Binary(SignedInteger  , Multiply)) => builder.build_integer_multiply(arguments[0], arguments[1]),
-                Primitive(_, Binary(Float  , Multiply)) => builder.build_float_multiply(arguments[0], arguments[1]),
-                Primitive(_, Binary(UnsignedInteger  , Divide)) => builder.build_unsigned_integer_divide(arguments[0], arguments[1]),
-                Primitive(_, Binary(SignedInteger  , Divide)) => builder.build_signed_integer_divide(arguments[0], arguments[1]),
-                Primitive(_, Binary(Float  , Divide)) => builder.build_float_divide(arguments[0], arguments[1]),
-                
-                Primitive(_, Binary(UnsignedInteger, ShiftLeft)) => builder.build_shift_left(arguments[0], arguments[1]),
-                Primitive(_, Binary(SignedInteger, ShiftLeft)) => builder.build_shift_left(arguments[0], arguments[1]),
-                Primitive(_, Binary(UnsignedInteger, ShiftRight)) => builder.build_arithmetic_shift_right(arguments[0], arguments[1]),
-                Primitive(_, Binary(SignedInteger, ShiftRight)) => builder.build_arithmetic_shift_right(arguments[0], arguments[1]),
+                    (UnsignedInteger, Binary(Add)) => builder.build_integer_add(arguments[0], arguments[1]),
+                    (SignedInteger, Binary(Add)) => builder.build_integer_add(arguments[0], arguments[1]),
+                    (Float, Binary(Add)) => builder.build_float_add(arguments[0], arguments[1]),
+                    (UnsignedInteger  , Binary(Subtract)) => builder.build_integer_subtract(arguments[0], arguments[1]),
+                    (SignedInteger, Binary(Subtract)) => builder.build_integer_subtract(arguments[0], arguments[1]),
+                    (Float, Binary(Subtract)) => builder.build_float_subtract(arguments[0], arguments[1]),
+                    (UnsignedInteger, Binary(Multiply)) => builder.build_integer_multiply(arguments[0], arguments[1]),
+                    (SignedInteger, Binary(Multiply)) => builder.build_integer_multiply(arguments[0], arguments[1]),
+                    (Float, Binary(Multiply)) => builder.build_float_multiply(arguments[0], arguments[1]),
+                    (UnsignedInteger, Binary(Divide)) => builder.build_unsigned_integer_divide(arguments[0], arguments[1]),
+                    (SignedInteger, Binary(Divide)) => builder.build_signed_integer_divide(arguments[0], arguments[1]),
+                    (Float, Binary(Divide)) => builder.build_float_divide(arguments[0], arguments[1]),
+                    
+                    (UnsignedInteger, Binary(ShiftLeft)) => builder.build_shift_left(arguments[0], arguments[1]),
+                    (SignedInteger, Binary(ShiftLeft)) => builder.build_shift_left(arguments[0], arguments[1]),
+                    (UnsignedInteger, Binary(ShiftRight)) => builder.build_arithmetic_shift_right(arguments[0], arguments[1]),
+                    (SignedInteger, Binary(ShiftRight)) => builder.build_arithmetic_shift_right(arguments[0], arguments[1]),
 
-                Primitive(_, Binary(Bool, And)) => builder.build_and(arguments[0], arguments[1]),
-                Primitive(_, Binary(UnsignedInteger, And)) => builder.build_and(arguments[0], arguments[1]),
-                Primitive(_, Binary(SignedInteger, And)) => builder.build_and(arguments[0], arguments[1]),
-                Primitive(_, Binary(Bool, Or)) => builder.build_or(arguments[0], arguments[1]),
-                Primitive(_, Binary(UnsignedInteger, Or)) => builder.build_or(arguments[0], arguments[1]),
-                Primitive(_, Binary(SignedInteger, Or)) => builder.build_or(arguments[0], arguments[1]),
-                Primitive(_, Binary(Bool, Xor)) => builder.build_xor(arguments[0], arguments[1]),
-                Primitive(_, Binary(UnsignedInteger, Xor)) => builder.build_xor(arguments[0], arguments[1]),
-                Primitive(_, Binary(SignedInteger, Xor)) => builder.build_xor(arguments[0], arguments[1]),
+                    (Bool, Binary(And)) => builder.build_and(arguments[0], arguments[1]),
+                    (UnsignedInteger, Binary(And)) => builder.build_and(arguments[0], arguments[1]),
+                    (SignedInteger, Binary(And)) => builder.build_and(arguments[0], arguments[1]),
+                    (Bool, Binary(Or)) => builder.build_or(arguments[0], arguments[1]),
+                    (UnsignedInteger, Binary(Or)) => builder.build_or(arguments[0], arguments[1]),
+                    (SignedInteger, Binary(Or)) => builder.build_or(arguments[0], arguments[1]),
+                    (Bool, Binary(Xor)) => builder.build_xor(arguments[0], arguments[1]),
+                    (UnsignedInteger, Binary(Xor)) => builder.build_xor(arguments[0], arguments[1]),
+                    (SignedInteger, Binary(Xor)) => builder.build_xor(arguments[0], arguments[1]),
 
-                Primitive(_, Binary(UnsignedInteger, predicate)) => builder.build_integer_compare(arguments[0], arguments[1], predicate.into()),
-                Primitive(_, Binary(SignedInteger, predicate)) => builder.build_integer_compare(arguments[0], arguments[1], predicate.into()),
-                Primitive(_, Binary(Float  , predicate)) => builder.build_float_compare(arguments[0], arguments[1], predicate.into()),
-                _ => panic!(format!("invalid implementation {:?}", &function.implementation))
-            }
+                    (Bool, Binary(predicate)) => builder.build_integer_compare(arguments[0], arguments[1], (*predicate).into()),
+                    (UnsignedInteger, Binary(predicate)) => builder.build_integer_compare(arguments[0], arguments[1], (*predicate).into()),
+                    (SignedInteger, Binary(predicate)) => builder.build_integer_compare(arguments[0], arguments[1], (*predicate).into()),
+                    (Float, Binary(predicate)) => builder.build_float_compare(arguments[0], arguments[1], (*predicate).into()),
+                    _ => panic!(format!("invalid implementation {:?}", &function.implementation))
+                }
+            },
+            _ => panic!(format!("invalid implementation {:?}", &function.implementation))
         })
     }
 

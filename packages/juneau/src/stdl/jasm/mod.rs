@@ -11,50 +11,37 @@ pub use new::*;
 
 pub fn new_jasm_stdl(ids:&mut impl IdContext, other_functions:&Functions<Jasm>, symbols:&[Variable<Jasm>]) -> (Functions<Jasm>, Symbols<Jasm>) {
     let mut functions = Functions::new();
-    let number_types = {
-        use NumberType::*;
-        use JasmType::*;
-        [(UnsignedInteger, U64), (SignedInteger, I64), (Float, F64)]
-    };
-
+    use JasmType::*;
+    let types = [U64, I64, F64];
     let binary_operators = {use BinaryOperator::*;[Add, Subtract, Multiply, Divide]};
     let unary_operators = {use UnaryOperator::*;[Negate]};
-    for (number_type, typ) in &number_types {
+    for typ in &types {
         for operator in &binary_operators {
-            functions.insert_function(new_binary(ids, *operator, *number_type, typ, typ));
+            functions.insert_function(new_binary(ids, *operator, typ, typ));
         }
         for operator in &unary_operators {
-            functions.insert_function(new_unary(ids, *operator, *number_type, typ, typ));
+            functions.insert_function(new_unary(ids, *operator, typ, typ));
         }
     }
 
     let predicates = {use BinaryOperator::*;[Equal, NotEqual, GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual]};
-    let predicate_types = {
-        use NumberType::*;
-        use JasmType::*;
-        [(UnsignedInteger, U8), (UnsignedInteger, U64), (SignedInteger, I64), (Float, F64), (NumberType::Bool, JasmType::Bool)]
-    };
-    use JasmType::*;
-    for (number_type, typ) in &predicate_types {
+    let predicate_types = [U8, U64, I64, F64, Bool];
+    for typ in &predicate_types {
         for operator in &predicates {
-            functions.insert_function(new_binary(ids, *operator, *number_type, typ, &Bool));
+            functions.insert_function(new_binary(ids, *operator, typ, &Bool));
         }
     }
 
     let integer_binary_operators = {use BinaryOperator::*;[ShiftLeft, ShiftRight, And, Or, Xor]};
     let integer_unary_operators = {use UnaryOperator::*;[Not]};
-    let integer_types = {
-        use NumberType::*;
-        use JasmType::*;
-        [(UnsignedInteger, U8), (UnsignedInteger, U64), (SignedInteger, I64)]
-    };
+    let integer_types = [U8, U64, I64];
 
-    for (number_type, typ) in &integer_types {
+    for typ in &integer_types {
         for operator in &integer_binary_operators {
-            functions.insert_function(new_binary(ids, *operator, *number_type, typ, typ));
+            functions.insert_function(new_binary(ids, *operator, typ, typ));
         }
         for operator in &integer_unary_operators {
-            functions.insert_function(new_unary(ids, *operator, *number_type, typ, typ));
+            functions.insert_function(new_unary(ids, *operator, typ, typ));
         }
     }
 
@@ -62,10 +49,10 @@ pub fn new_jasm_stdl(ids:&mut impl IdContext, other_functions:&Functions<Jasm>, 
     let bool_unary_operators = {use UnaryOperator::*;[Not]};
 
     for operator in &bool_binary_operators {
-        functions.insert_function(new_binary(ids, *operator, NumberType::Bool, &Bool, &Bool));
+        functions.insert_function(new_binary(ids, *operator, &Bool, &Bool));
     }
     for operator in &bool_unary_operators {
-        functions.insert_function(new_unary(ids, *operator, NumberType::Bool, &Bool, &Bool));
+        functions.insert_function(new_unary(ids, *operator, &Bool, &Bool));
     }
 
     functions.union_self(other_functions);
@@ -79,7 +66,7 @@ pub fn new_jasm_stdl(ids:&mut impl IdContext, other_functions:&Functions<Jasm>, 
 }
 
 
-fn new_binary(ids:&mut impl IdContext, operator:BinaryOperator, number_type:NumberType, parameter:&JasmType, retrn:&JasmType) -> Rc<Function<Jasm>> {
+fn new_binary(ids:&mut impl IdContext, operator:BinaryOperator, parameter:&JasmType, retrn:&JasmType) -> Rc<Function<Jasm>> {
     Function::new(
         ids.new_id(),
         operator.to_string().into(),
@@ -87,16 +74,16 @@ fn new_binary(ids:&mut impl IdContext, operator:BinaryOperator, number_type:Numb
             Parameter::new(ids.new_id(), &"a".into(), parameter),
             Parameter::new(ids.new_id(), &"b".into(), parameter)
         ],
-        Implementation::Primitive(retrn.to_owned(), JasmPrimitiveImplementation::Binary(number_type, operator).into()))
+        Implementation::Primitive(retrn.to_owned(), JasmPrimitiveImplementation::Binary(operator).into()))
 }
 
 
-fn new_unary(ids:&mut impl IdContext, operator:UnaryOperator, number_type:NumberType, parameter:&JasmType, retrn:&JasmType) -> Rc<Function<Jasm>> {
+fn new_unary(ids:&mut impl IdContext, operator:UnaryOperator, parameter:&JasmType, retrn:&JasmType) -> Rc<Function<Jasm>> {
     Function::new(
         ids.new_id(),
         operator.to_string().into(),
         vec![
             Parameter::new(ids.new_id(), &"a".into(), parameter),
         ],
-        Implementation::Primitive(retrn.to_owned(), JasmPrimitiveImplementation::Unary(number_type, operator).into()))
+        Implementation::Primitive(retrn.to_owned(), JasmPrimitiveImplementation::Unary(operator).into()))
 }

@@ -7,18 +7,11 @@ use crate::semantic::jasm::{Jasm, JasmType};
 #[derive(Debug, Clone, PartialEq)]
 pub enum JasmPrimitiveImplementation {
     External{is_pure: bool, ptr: *mut c_void},
-    Unary(NumberType, UnaryOperator),
-    Binary(NumberType, BinaryOperator)
+    Unary(UnaryOperator),
+    Binary(BinaryOperator)
 }
 
 
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum NumberType {
-    UnsignedInteger,
-    SignedInteger,
-    Float,
-    Bool
-}
 
 
 impl Function<Jasm> {

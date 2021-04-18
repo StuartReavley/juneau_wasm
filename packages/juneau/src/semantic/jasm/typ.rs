@@ -38,7 +38,7 @@ impl Type<Jasm> for JasmType {
 
 impl From<FunctionType<Jasm>> for JasmType {
     fn from(typ:FunctionType<Jasm>) -> Self {
-        JasmType::Function(typ)
+        Self::Function(typ)
     }
 }
 
@@ -78,5 +78,34 @@ impl Display for JasmType {
             Array(typ) => format!("{}[]", typ)
         };
         write!(f, "{}", text)
+    }
+}
+
+
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum NumberType {
+    UnsignedInteger,
+    SignedInteger,
+    Float,
+    Bool
+}
+
+impl From<&JasmType> for NumberType {
+    fn from(typ:&JasmType) -> Self {
+        use JasmType::*;
+        match typ {
+            Bool => NumberType::Bool,
+            U8 => NumberType::UnsignedInteger,
+            I64 => NumberType::SignedInteger,
+            U64 => NumberType::UnsignedInteger,
+            F64 => NumberType::Float,
+            String => todo!(),
+            Void => todo!(),
+            Pointer(_) => todo!(),
+            Function(_) => todo!(),
+            Struct(_, _) => todo!(),
+            Array(_) => todo!()
+        }
     }
 }
