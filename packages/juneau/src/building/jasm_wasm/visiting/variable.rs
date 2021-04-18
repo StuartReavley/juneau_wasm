@@ -8,8 +8,8 @@ use crate::building::BuildVisitor;
 
 impl Visitor<&Variable<Jasm>, LocalId> for WasmBuilderVisitor {
     fn visit(&mut self, variable: &Variable<Jasm>) -> LocalId {
-        let Variable {id, name, typ} = variable;
-        let typ = ValType::from(typ);
+        let Variable {id, typ, ..} = variable;
+        let typ = self.visit(typ);
         let variable = self.module.locals.add(typ);
         self.insert_variable(*id, variable);
         variable

@@ -15,9 +15,9 @@ fn wasm_assign() {
         a = 4;
         return a;
     }"#; // JASM
-    let mut parse_context = new_default_context();
-    let jasm = parse_jasm_function(&mut parse_context, source);
-    let wasm_bytes = compile_wasm(&jasm);
+    let (mut parse_visitor, mut build_visitor) = new_default_visitors();
+    let jasm = parse_jasm_function(&mut parse_visitor, source);
+    let wasm_bytes = build_wasm_function(&mut build_visitor, &jasm);
     
     // Set up Wasmer, which runs the WebAssembly inside our tests
     let compiler_config = Cranelift::default();
@@ -43,10 +43,9 @@ fn wasm_assign_for_loop() {
         }
         return i;
     }"#; // JASM
-    let mut parse_context = new_default_context();
-    let jasm = parse_jasm_function(&mut parse_context, source);
-    println!("{:#?}", &jasm);
-    let wasm_bytes = compile_wasm(&jasm);
+    let (mut parse_visitor, mut build_visitor) = new_default_visitors();
+    let jasm = parse_jasm_function(&mut parse_visitor, source);
+    let wasm_bytes = build_wasm_function(&mut build_visitor, &jasm);
     
     // Set up Wasmer, which runs the WebAssembly inside our tests
     let compiler_config = Cranelift::default();

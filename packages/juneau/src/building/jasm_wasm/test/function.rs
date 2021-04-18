@@ -11,10 +11,9 @@ use super::new_default_visitors;
 fn wasm_function() {
     // This is jasm code in string form. Check out packages/juneau/src/parsing/jasm/test folder for more examples of jasm in string form
     let source = "function add(a:i64, b:i64):i64 {return a + b;}"; // JASM
-    let mut parse_context = new_default_context();
-    let jasm = parse_jasm_function(&mut parse_context, source);
-    
-    let wasm_bytes = compile_wasm(&jasm);
+    let (mut parse_visitor, mut build_visitor) = new_default_visitors();
+    let jasm = parse_jasm_function(&mut parse_visitor, source);
+    let wasm_bytes = build_wasm_function(&mut build_visitor, &jasm);
     
     // Set up Wasmer, which runs the WebAssembly inside our tests
     let compiler_config = Cranelift::default();
