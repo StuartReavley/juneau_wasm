@@ -5,7 +5,7 @@ use crate::{building::jasm_wasm::visitor::WasmBuilderVisitor, core::{Id, Visitor
         },
         Function, FunctionType, Name, Parameter, Variable,
     }};
-use walrus::ValType;
+use walrus::{ValType, ir::BinaryOp};
 use wasmer::Val;
 
 

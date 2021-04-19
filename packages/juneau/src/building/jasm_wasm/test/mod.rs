@@ -1,4 +1,4 @@
-mod sum;
+mod assign;
 mod wasmer;
 mod function;
 
