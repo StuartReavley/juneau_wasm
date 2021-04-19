@@ -34,7 +34,6 @@ fn wasm_assign() {
 
 #[test]
 fn wasm_assign_for_loop() {
-    // This is jasm code in string form. Check out packages/juneau/src/parsing/jasm/test folder for more examples of jasm in string form
     let source = r#"function main():i64 {
         let i:i64;
         i = 0;
@@ -57,5 +56,5 @@ fn wasm_assign_for_loop() {
     let add = instance.exports.get_function("main").unwrap();
     // execute the wasm function
     let results = add.call(&[]).unwrap();
-    assert_eq!(results.to_vec(), vec![Value::I64(4)]);
+    assert_eq!(results.to_vec(), vec![Value::I64(6)]);
 }
