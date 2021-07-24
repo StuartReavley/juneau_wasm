@@ -18,7 +18,7 @@ use std::{any::Any, rc::Rc, str::FromStr};
 use walrus::ir::*;
 use walrus::{FunctionBuilder, InstrSeqBuilder, LocalId, Module, ModuleConfig, ValType};
 
-impl JasmStatementVisitor<()> for WasmBuilderVisitor {
+impl<'b> JasmStatementVisitor<()> for WasmImplementationVisitor<'b> {
     fn visit_empty(&mut self) -> () {
         println!("Empty statement\n");
         todo!()
@@ -39,7 +39,7 @@ impl JasmStatementVisitor<()> for WasmBuilderVisitor {
             object => panic!(format!("invalid assignment {:?}", object))
         };
         self.visit(expression);
-        self.function_builder.get_mut().func_body().local_set(local);
+        self.builder.local_set(local);
     }
 
     fn visit_if(
@@ -52,48 +52,47 @@ impl JasmStatementVisitor<()> for WasmBuilderVisitor {
     }
 
     fn visit_while(&mut self, condition: &JasmExpression, body: &Block) -> () {
-        // we count the length of instruction sequence before adding condition.
-        let curr_seq_len = self.function_builder.get_mut().func_body().instrs().len();
+        // // we count the length of instruction sequence before adding condition.
+        // let curr_seq_len = self.function_builder.get_mut().func_body().instrs().len();
  
 
-        self.visit(condition);
+        // self.visit(condition);
         
         
-        // TODO: Find the easiest way to split the wasm sequences.
-        // 
-        // 1. We get all the sequence after visiting conditions
-        // 2. We split the sequence based on the initial sequence in `curr_seq_len`
-        let mut curr_seq = self.function_builder.get_mut().func_body().instrs_mut().to_owned();
-        let (_, new_seq) = curr_seq.split_at_mut(curr_seq_len);
-        let new_seq_len = new_seq.len();
+        // // TODO: Find the easiest way to split the wasm sequences.
+        // // 
+        // // 1. We get all the sequence after visiting conditions
+        // // 2. We split the sequence based on the initial sequence in `curr_seq_len`
+        // let mut curr_seq = self.function_builder.get_mut().func_body().instrs_mut().to_owned();
+        // let (_, new_seq) = curr_seq.split_at_mut(curr_seq_len);
+        // let new_seq_len = new_seq.len();
 
-        // 3. We visit the while's body
-        // 4. We obtain all sequence which includes all the sequences from the start
-        self.visits(&body.0);
-        let mut curr_body_seq = self.function_builder.get_mut().func_body().instrs_mut().to_owned();
+        // // 3. We visit the while's body
+        // // 4. We obtain all sequence which includes all the sequences from the start
+        // self.visits(&body.0);
+        // let mut curr_body_seq = self.function_builder.get_mut().func_body().instrs_mut().to_owned();
 
-        // 5. We split the sequence again similar to step 2 above, but we got the rest of the sequence
-        // 6. We then split the rest of the sequence based on the length of the condition's sequence
-        let (_, all_seq) = curr_body_seq.split_at_mut(curr_seq_len);
-        let (cond_seq, body_seq) = all_seq.split_at_mut(new_seq_len);
-        println!("{:?}", condition);
+        // // 5. We split the sequence again similar to step 2 above, but we got the rest of the sequence
+        // // 6. We then split the rest of the sequence based on the length of the condition's sequence
+        // let (_, all_seq) = curr_body_seq.split_at_mut(curr_seq_len);
+        // let (cond_seq, body_seq) = all_seq.split_at_mut(new_seq_len);
+        // println!("{:?}", condition);
         
-        let mut function_builder = self.function_builder.get_mut().func_body();
 
-        function_builder.block(None, |  done | {
+        self.builder.block(None, |  done | {
             let done_id = done.id().to_owned();
             
             done.loop_(None, | loop_ | {
                 let loop_id = loop_.id();
-                // &self.visit(condition);
-                for (seq, loc) in cond_seq.to_owned().iter() {
-                    loop_.instr(seq.to_owned());
-                };
+                &self.visit(condition);
+                // for (seq, loc) in cond_seq.to_owned().iter() {
+                //     loop_.instr(seq.to_owned());
+                // };
                 loop_.br_if(done_id);
-                // self.visits(&body.0);
-                for (seq, loc) in body_seq.to_owned().iter() {
-                    loop_.instr(seq.to_owned());
-                };
+                self.visits(&body.0);
+                // for (seq, loc) in body_seq.to_owned().iter() {
+                //     loop_.instr(seq.to_owned());
+                // };
                 loop_.br(loop_id);
             });
             
@@ -128,6 +127,6 @@ impl JasmStatementVisitor<()> for WasmBuilderVisitor {
         }
 
         // https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-instr-control
-        self.function_builder.get_mut().func_body().return_();
+        self.builder.return_();
     }
 }

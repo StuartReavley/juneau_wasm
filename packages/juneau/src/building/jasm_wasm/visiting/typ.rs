@@ -9,7 +9,7 @@ use walrus::{ValType, ir::BinaryOp};
 use wasmer::Val;
 
 
-impl Visitor<&JasmType, ValType> for WasmBuilderVisitor {
+impl<'b> Visitor<&JasmType, ValType> for WasmBuilderVisitor<'b> {
     fn visit(&mut self, typ:&JasmType) -> ValType {
         use JasmType::*;
         match typ {

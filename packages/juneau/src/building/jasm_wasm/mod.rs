@@ -33,7 +33,7 @@ use walrus::ir::*;
 use walrus::{FunctionBuilder, InstrSeqBuilder, LocalId, Module, ModuleConfig, ValType};
 
 
-pub fn build_wasm_function(visitor:&mut WasmBuilderVisitor, jasm: &Rc<Function<Jasm>>) -> Vec<u8> {
+pub fn build_wasm_function(visitor:&mut WasmBuildVisitor, jasm: &Rc<Function<Jasm>>) -> Vec<u8> {
 
     visitor.visit(jasm);
 
@@ -41,7 +41,7 @@ pub fn build_wasm_function(visitor:&mut WasmBuilderVisitor, jasm: &Rc<Function<J
     visitor.module.emit_wasm()
 }
 
-pub fn build_wasm_function_to_file(visitor:&mut WasmBuilderVisitor, jasm: &Rc<Function<Jasm>>) -> anyhow::Result<()> {
+pub fn build_wasm_function_to_file(visitor:&mut WasmBuildVisitor, jasm: &Rc<Function<Jasm>>) -> anyhow::Result<()> {
 
     visitor.visit(jasm);
     

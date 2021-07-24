@@ -1,4 +1,4 @@
-use crate::{building::{BuildVisitor, BuildVisitorInner, jasm_wasm::visitor::WasmBuilderVisitor}, core::{Id, IdContext, IdProvider, Visits}, semantic::{BinaryOperator, Function, FunctionType, Functions, Name, Parameter, Variable, jasm::{
+use crate::{building::{BuildVisitor, BuildVisitorInner, jasm_wasm::visitor::WasmBuildVisitor}, core::{Id, IdContext, IdProvider, Visits}, semantic::{BinaryOperator, Function, FunctionType, Functions, Name, Parameter, Variable, jasm::{
     Block, Jasm, JasmExpression, JasmExpressionVisitor, JasmStatement,
     JasmStatementVisitor, JasmType, JasmValue, Struct,
 }}};
@@ -11,7 +11,7 @@ use walrus::{FunctionId, ir::*};
 use walrus::{FunctionBuilder, InstrSeqBuilder, LocalId, Module, ModuleConfig, ValType};
 
 
-impl Visitor<&Rc<Function<Jasm>>, Option<FunctionId>> for WasmBuilderVisitor {
+impl<'b> Visitor<&Rc<Function<Jasm>>, Option<FunctionId>> for WasmBuildVisitor {
     fn visit(&mut self, function: &Rc<Function<Jasm>>) -> Option<FunctionId> {
         self.resolve_module_function(function.to_owned(), |visitor| {
             let Function {name, parameters, implementation, ..} = function.as_ref();

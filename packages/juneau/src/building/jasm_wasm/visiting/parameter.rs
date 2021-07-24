@@ -6,7 +6,7 @@ use crate::semantic::Parameter;
 use crate::semantic::jasm::Jasm;
 use crate::building::BuildVisitor;
 
-impl Visitor<&Parameter<Jasm>, LocalId> for WasmBuilderVisitor {
+impl<'b> Visitor<&Parameter<Jasm>, LocalId> for WasmBuilderVisitor<'b> {
     fn visit(&mut self, parameter: &Parameter<Jasm>) -> LocalId {
         let Parameter {id, typ, ..} = parameter;
         let typ = self.visit(typ);

@@ -1,6 +1,5 @@
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::fmt::Debug;
+use juneau_core::RcRefCell;
 
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
@@ -36,8 +35,8 @@ impl IdProvider {
         Self {next_id}
     }
 
-    pub fn new_cell(next_id:u64) -> Rc<RefCell<Self>> {
-        Rc::new(RefCell::new(Self::new(next_id)))
+    pub fn new_cell(next_id:u64) -> RcRefCell<Self> {
+        RcRefCell::new(Self::new(next_id))
     }
 
     pub fn increment_to(&mut self, value:u64) {
@@ -58,7 +57,7 @@ impl IdContext for IdProvider {
     }
 }
 
-impl IdContext for Rc<RefCell<IdProvider>> {
+impl IdContext for RcRefCell<IdProvider> {
     fn new_id(&mut self) -> Id {
         self.borrow_mut().new_id()
     }
